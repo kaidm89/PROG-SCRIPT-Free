@@ -1,0 +1,169 @@
+-- سكربت شامل ومتقدم لـ MM2
+local Library = loadstring(game:HttpGet("https://pastebin.com/raw/FsJak6AT"))() -- مكتبة واجهة المستخدم
+local Window = Library:CreateWindow("MM2 Ultimate Helper") -- إنشاء نافذة
+local Main = Window:CreateFolder("Main Features") -- ميزات رئيسية
+local ESP = Window:CreateFolder("ESP Features") -- ميزات ESP
+local Combat = Window:CreateFolder("Combat Features") -- ميزات القتال
+local Movement = Window:CreateFolder("Movement Features") -- ميزات الحركة
+local Settings = Window:CreateFolder("Settings") -- إعدادات إضافية
+
+-- متغيرات التحكم
+getgenv().ESPEnabled = false
+getgenv().CoinESP = false
+getgenv().AimBotGun = false
+getgenv().AimBotKnife = false
+getgenv().GodMode = false
+getgenv().CollectGun = false
+getgenv().QuickKill = false
+getgenv().PlayerSpeed = 16
+getgenv().PlayerJump = 50
+local murdererName = nil
+local sheriffName = nil
+
+-- الوظيفة: كشف الأدوار (ESP)
+ESP:Toggle("ESP (كشف الأدوار)", function(state)
+    getgenv().ESPEnabled = state
+    if state then
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                local Billboard = Instance.new("BillboardGui")
+                Billboard.Name = "ESP"
+                Billboard.Parent = player.Character.Head
+                Billboard.Size = UDim2.new(0, 200, 0, 50)
+                Billboard.StudsOffset = Vector3.new(0, 3, 0)
+                Billboard.AlwaysOnTop = true
+
+                local TextLabel = Instance.new("TextLabel", Billboard)
+                TextLabel.Text = player.Name .. " | Role: Unknown"
+                TextLabel.Size = UDim2.new(1, 0, 1, 0)
+                TextLabel.TextColor3 = Color3.new(1, 1, 1)
+                TextLabel.BackgroundTransparency = 1
+
+                spawn(function()
+                    while getgenv().ESPEnabled do
+                        task.wait(0.5)
+                        if player.Character and player.Character:FindFirstChild("Knife") then
+                            TextLabel.Text = player.Name .. " | Role: Murderer"
+                            TextLabel.TextColor3 = Color3.new(1, 0, 0)
+                            murdererName = player.Name
+                        elseif player.Character and player.Character:FindFirstChild("Gun") then
+                            TextLabel.Text = player.Name .. " | Role: Sheriff"
+                            TextLabel.TextColor3 = Color3.new(0, 1, 0)
+                            sheriffName = player.Name
+                        else
+                            TextLabel.Text = player.Name .. " | Role: Innocent"
+                            TextLabel.TextColor3 = Color3.new(1, 1, 1)
+                        end
+                    end
+                end)
+            end
+        end
+    else
+        for _, player in pairs(game.Players:GetPlayers()) do
+            if player.Character and player.Character:FindFirstChild("Head") then
+                local ESP = player.Character.Head:FindFirstChild("ESP")
+                if ESP then
+                    ESP:Destroy()
+                end
+            end
+        end
+    end
+end)
+
+-- الوظيفة: ESP العملات
+ESP:Toggle("ESP (الكشف عن العملات)", function(state)
+    getgenv().CoinESP = state
+    if state then
+        spawn(function()
+            while getgenv().CoinESP do
+                task.wait(1)
+                for _, coin in pairs(workspace:GetChildren()) do
+                    if coin.Name == "Coin" and not coin:FindFirstChild("CoinESP") then
+                        local Billboard = Instance.new("BillboardGui", coin)
+                        Billboard.Name = "CoinESP"
+                        Billboard.Size = UDim2.new(0, 50, 0, 50)
+                        Billboard.AlwaysOnTop = true
+
+                        local TextLabel = Instance.new("TextLabel", Billboard)
+                        TextLabel.Size = UDim2.new(1, 0, 1, 0)
+                        TextLabel.Text = "Coin"
+                        TextLabel.TextColor3 = Color3.new(1, 1, 0)
+                        TextLabel.BackgroundTransparency = 1
+                    end
+                end
+            end
+        end)
+    else
+        for _, coin in pairs(workspace:GetChildren()) do
+            if coin:FindFirstChild("CoinESP") then
+                coin.CoinESP:Destroy()
+            end
+        end
+    end
+end)
+
+-- الوظيفة: God Mode
+Main:Toggle("God Mode", function(state)
+    getgenv().GodMode = state
+    if state then
+        spawn(function()
+            while getgenv().GodMode do
+                task.wait()
+                if murdererName then
+                    local murderer = game.Players:FindFirstChild(murdererName)
+                    if murderer and murderer.Character and murderer.Character:FindFirstChild("HumanoidRootPart") then
+                        local distance = (game.Players.LocalPlayer.Character.HumanoidRootPart.Position - murderer.Character.HumanoidRootPart.Position).Magnitude
+                        if distance < 5 then
+                            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0)
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- الوظيفة: Auto Collect Gun
+Main:Toggle("Auto Collect Gun", function(state)
+    getgenv().CollectGun = state
+    if state then
+        spawn(function()
+            while getgenv().CollectGun do
+                task.wait(1)
+                for _, item in pairs(workspace:GetChildren()) do
+                    if item.Name == "GunDrop" then
+                        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = item.CFrame
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- الوظيفة: Quick Kill
+Combat:Toggle("Quick Kill", function(state)
+    getgenv().QuickKill = state
+    if state then
+        spawn(function()
+            while getgenv().QuickKill do
+                task.wait(0.5)
+                if game.Players.LocalPlayer.Character:FindFirstChild("Knife") then
+                    for _, player in pairs(game.Players:GetPlayers()) do
+                        if player ~= game.Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end)
+
+-- الوظيفة: سرعة وقفز
+Movement:Slider("Speed Boost", {min = 16, max = 100, precise = true}, function(value)
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+end)
+
+Movement:Slider("Jump Boost", {min = 50, max = 200, precise = true}, function(value)
+    game.Players.LocalPlayer.Character.Humanoid.JumpPower = value
+end)
