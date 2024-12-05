@@ -1,154 +1,170 @@
+-- مكتبة Blox Fruits Lua الخاصة بـ PROG-SCRIPT (مكتبة موسعة)
 local Library = {}
 
--- Function to start a dynamic quest based on the player's level
-function Library.startDynamicQuest()
-    local playerLevel = game.Players.LocalPlayer.Data.Level.Value
-    local questNPC, questName = "", ""
-
-    if playerLevel >= 1 and playerLevel < 5 then
-        questNPC = "Starter NPC"
-        questName = "Bandit Quest"
-    elseif playerLevel >= 5 and playerLevel < 10 then
-        questNPC = "Next NPC"
-        questName = "New Quest"
-    else
-        print("No quests available for your level.")
-        return
-    end
-
-    Library.startQuest(questNPC, questName)
-end
-
--- Function to purchase an item automatically
-function Library.purchaseItem(shopName, itemName)
-    local shop = game.Workspace.Shops:FindFirstChild(shopName)
-    if shop then
-        local item = shop.Items:FindFirstChild(itemName)
-        if item then
-            fireclickdetector(item.ClickDetector)
-            print("Purchased: " .. itemName)
-        else
-            print("Item not found: " .. itemName)
-        end
-    else
-        print("Shop not found: " .. shopName)
-    end
-end
-
--- Function to attack enemies with a specific strategy
-function Library.attackEnemies(strategy)
-    local enemies = game.Workspace.Enemies:GetChildren()
-    for _, enemy in pairs(enemies) do
-        if strategy == "Ranged" then
-            Library.attackEnemy(enemy, "Gun")
-        elseif strategy == "CloseCombat" then
-            Library.attackEnemy(enemy, "Sword")
-        elseif strategy == "Fruit" then
-            Library.attackEnemy(enemy, "Fruit")
-        else
-            print("Invalid strategy.")
-        end
-    end
-end
-
--- Function to get game stats (Health, Level, Energy)
-function Library.getStats()
-    local stats = {}
+-- إعداد Auto Level
+function Library.autoLevel(startLevel)
     local player = game.Players.LocalPlayer
+    local currentLevel = startLevel
 
-    stats.Level = player.Data.Level.Value
-    stats.Health = player.Character.Humanoid.Health
-    stats.Energy = player.Data.Energy.Value
-
-    return stats
-end
-
--- Function for automatic defense
-function Library.autoDefend()
     while true do
-        local player = game.Players.LocalPlayer
-        local character = player.Character
-        local humanoid = character and character:FindFirstChild("Humanoid")
-
-        if humanoid and humanoid.Health < 50 then
-            local nearestEnemy = Library.findNearestEnemy()
-            if nearestEnemy then
-                print("Defending against: " .. nearestEnemy.Name)
-                Library.attackEnemy(nearestEnemy, "Sword")
-            end
+        wait(3)
+        if currentLevel < player.Level then
+            currentLevel = player.Level
         end
+        -- منطق لرفع المستوى التلقائي هنا
+    end
+end
+
+-- إعداد Auto Farm
+function Library.autoFarm()
+    local player = game.Players.LocalPlayer
+    while true do
         wait(1)
-    end
-end
-
--- Include existing functions from the base library
-function Library.startQuest(npcName, questName)
-    local npc = game.Workspace.NPCs:FindFirstChild(npcName)
-    if npc and npc:FindFirstChild("Quest") then
-        fireclickdetector(npc.Quest.ClickDetector)
-        wait(0.5)
-        local quest = game.Players.LocalPlayer.PlayerGui.Main.Quest:FindFirstChild(questName)
-        if quest then
-            fireclickdetector(quest.ClickDetector)
-            print("Quest started: " .. questName)
+        local closestEnemy = findClosestEnemy(player)
+        if closestEnemy then
+            attackEnemy(closestEnemy)
         end
     end
 end
 
-function Library.findNearestEnemy()
+-- ترقية الإحصائيات
+function Library.upgradeStats(statName)
     local player = game.Players.LocalPlayer
-    local character = player.Character
-    local humanoidRootPart = character.HumanoidRootPart
-    local nearestEnemy, nearestDistance = nil, math.huge
+    if statName == "strength" then
+        player.Stats.Strength = player.Stats.Strength + 1
+    elseif statName == "defense" then
+        player.Stats.Defense = player.Stats.Defense + 1
+    elseif statName == "speed" then
+        player.Stats.Speed = player.Stats.Speed + 1
+    end
+end
 
-    for _, enemy in pairs(game.Workspace.Enemies:GetChildren()) do
-        if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
-            local distance = (humanoidRootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
-            if distance < nearestDistance then
-                nearestEnemy = enemy
-                nearestDistance = distance
+-- التنقل إلى موقع المهمة
+function Library.teleportToQuest(questName)
+    local questLocation = game.Workspace.Quests[questName]
+    if questLocation then
+        game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = questLocation.CFrame
+    end
+end
+
+-- Auto Quest (إضافة وظيفة لتحديد المهمة تلقائيًا بناءً على المستوى)
+function Library.autoQuest()
+    local player = game.Players.LocalPlayer
+    local currentLevel = player.Level
+
+    if currentLevel >= 1 and currentLevel < 5 then
+        Library.teleportToQuest("Quest1")
+    elseif currentLevel >= 5 then
+        Library.teleportToQuest("Quest2")
+    end
+end
+
+-- Auto Fruit Collection
+function Library.autoFruitCollection()
+    local player = game.Players.LocalPlayer
+    while true do
+        wait(2)
+        local fruits = game.Workspace.Fruits:GetChildren()
+        for _, fruit in pairs(fruits) do
+            if (fruit.Position - player.Character.HumanoidRootPart.Position).magnitude < 50 then
+                player.Character.HumanoidRootPart.CFrame = fruit.CFrame
+                -- يمكن إضافة أنماط معينة لاختيار الفاكهة
             end
         end
     end
-
-    return nearestEnemy
 end
 
-function Library.attackEnemy(enemy, combatStyle)
+-- Auto Combat
+function Library.autoCombat()
     local player = game.Players.LocalPlayer
-    local character = player.Character
-    if character and enemy and enemy:FindFirstChild("Humanoid") then
-        local humanoidRootPart = enemy:FindFirstChild("HumanoidRootPart")
-        if humanoidRootPart then
-            character.HumanoidRootPart.CFrame = humanoidRootPart.CFrame
-            if combatStyle == "Sword" or combatStyle == "Gun" or combatStyle == "Fruit" then
-                local tool = character:FindFirstChildOfClass("Tool")
-                if tool then
-                    tool:Activate()
-                end
-            elseif combatStyle == "Melee" then
-                character.Humanoid:MoveTo(humanoidRootPart.Position)
-                wait(0.1)
-            end
+    while true do
+        wait(1)
+        local closestEnemy = findClosestEnemy(player)
+        if closestEnemy then
+            attackEnemy(closestEnemy)
         end
     end
 end
 
--- Function to toggle the quest system
-function Library.toggleQuest(activate)
-    if activate then
-        Library.startDynamicQuest()
+-- شراء العناصر عن بعد
+function Library.buyItem(itemName, quantity)
+    local player = game.Players.LocalPlayer
+    local shop = game.Workspace.Shop
+    local item = shop:FindFirstChild(itemName)
+    
+    if item then
+        for i = 1, quantity do
+            -- نفذ عملية شراء العنصر
+            -- ملاحظة: تأكد من وجود النظام الذي يسمح بشراء العناصر في اللعبة
+            print("شراء العنصر: " .. itemName)
+        end
     else
-        print("Quest system deactivated.")
+        print("العنصر غير موجود.")
     end
 end
 
--- Function to show player stats on the GUI
-function Library.showStats()
-    local stats = Library.getStats()
-    print("Player Level: " .. stats.Level)
-    print("Player Health: " .. stats.Health)
-    print("Player Energy: " .. stats.Energy)
+-- جلب جوائز اللعبة
+function Library.getRewards()
+    local player = game.Players.LocalPlayer
+    local rewards = game.Workspace.Rewards:GetChildren()
+
+    for _, reward in pairs(rewards) do
+        if (reward.Position - player.Character.HumanoidRootPart.Position).magnitude < 50 then
+            player.Character.HumanoidRootPart.CFrame = reward.CFrame
+            -- جمع الجائزة
+            print("تم جمع الجائزة: " .. reward.Name)
+        end
+    end
+end
+
+-- استخدام الحركات الخاصة (مثل فاكهة الشيطان أو أسلوب القتال)
+function Library.useSpecialMove(moveName)
+    local player = game.Players.LocalPlayer
+    if player.Character:FindFirstChild(moveName) then
+        -- تنفيذ الحركة الخاصة
+        print("تم استخدام الحركة الخاصة: " .. moveName)
+    else
+        print("الحركة الخاصة غير موجودة.")
+    end
+end
+
+-- التبديل بين الأسلحة أو الفواكه
+function Library.switchWeapon(weaponName)
+    local player = game.Players.LocalPlayer
+    if player.Backpack:FindFirstChild(weaponName) then
+        player.Character.Humanoid:EquipTool(player.Backpack[weaponName])
+        print("تم تجهيز السلاح: " .. weaponName)
+    else
+        print("السلاح غير موجود.")
+    end
+end
+
+-- جمع جوائز الحدث
+function Library.collectEventRewards(eventName)
+    local player = game.Players.LocalPlayer
+    local eventRewards = game.Workspace.Events[eventName]:GetChildren()
+
+    for _, reward in pairs(eventRewards) do
+        if (reward.Position - player.Character.HumanoidRootPart.Position).magnitude < 50 then
+            player.Character.HumanoidRootPart.CFrame = reward.CFrame
+            print("تم جمع جائزة الحدث: " .. reward.Name)
+        end
+    end
+end
+
+-- قتل الزعماء
+function Library.farmBosses()
+    local player = game.Players.LocalPlayer
+    while true do
+        wait(5)
+        local bosses = game.Workspace.Bosses:GetChildren()
+        for _, boss in pairs(bosses) do
+            if (boss.Position - player.Character.HumanoidRootPart.Position).magnitude < 100 then
+                attackEnemy(boss)
+                print("تم مهاجمة الزعيم: " .. boss.Name)
+            end
+        end
+    end
 end
 
 return Library
