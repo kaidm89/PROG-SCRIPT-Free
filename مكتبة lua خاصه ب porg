@@ -1,0 +1,154 @@
+local Library = {}
+
+-- Function to start a dynamic quest based on the player's level
+function Library.startDynamicQuest()
+    local playerLevel = game.Players.LocalPlayer.Data.Level.Value
+    local questNPC, questName = "", ""
+
+    if playerLevel >= 1 and playerLevel < 5 then
+        questNPC = "Starter NPC"
+        questName = "Bandit Quest"
+    elseif playerLevel >= 5 and playerLevel < 10 then
+        questNPC = "Next NPC"
+        questName = "New Quest"
+    else
+        print("No quests available for your level.")
+        return
+    end
+
+    Library.startQuest(questNPC, questName)
+end
+
+-- Function to purchase an item automatically
+function Library.purchaseItem(shopName, itemName)
+    local shop = game.Workspace.Shops:FindFirstChild(shopName)
+    if shop then
+        local item = shop.Items:FindFirstChild(itemName)
+        if item then
+            fireclickdetector(item.ClickDetector)
+            print("Purchased: " .. itemName)
+        else
+            print("Item not found: " .. itemName)
+        end
+    else
+        print("Shop not found: " .. shopName)
+    end
+end
+
+-- Function to attack enemies with a specific strategy
+function Library.attackEnemies(strategy)
+    local enemies = game.Workspace.Enemies:GetChildren()
+    for _, enemy in pairs(enemies) do
+        if strategy == "Ranged" then
+            Library.attackEnemy(enemy, "Gun")
+        elseif strategy == "CloseCombat" then
+            Library.attackEnemy(enemy, "Sword")
+        elseif strategy == "Fruit" then
+            Library.attackEnemy(enemy, "Fruit")
+        else
+            print("Invalid strategy.")
+        end
+    end
+end
+
+-- Function to get game stats (Health, Level, Energy)
+function Library.getStats()
+    local stats = {}
+    local player = game.Players.LocalPlayer
+
+    stats.Level = player.Data.Level.Value
+    stats.Health = player.Character.Humanoid.Health
+    stats.Energy = player.Data.Energy.Value
+
+    return stats
+end
+
+-- Function for automatic defense
+function Library.autoDefend()
+    while true do
+        local player = game.Players.LocalPlayer
+        local character = player.Character
+        local humanoid = character and character:FindFirstChild("Humanoid")
+
+        if humanoid and humanoid.Health < 50 then
+            local nearestEnemy = Library.findNearestEnemy()
+            if nearestEnemy then
+                print("Defending against: " .. nearestEnemy.Name)
+                Library.attackEnemy(nearestEnemy, "Sword")
+            end
+        end
+        wait(1)
+    end
+end
+
+-- Include existing functions from the base library
+function Library.startQuest(npcName, questName)
+    local npc = game.Workspace.NPCs:FindFirstChild(npcName)
+    if npc and npc:FindFirstChild("Quest") then
+        fireclickdetector(npc.Quest.ClickDetector)
+        wait(0.5)
+        local quest = game.Players.LocalPlayer.PlayerGui.Main.Quest:FindFirstChild(questName)
+        if quest then
+            fireclickdetector(quest.ClickDetector)
+            print("Quest started: " .. questName)
+        end
+    end
+end
+
+function Library.findNearestEnemy()
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    local humanoidRootPart = character.HumanoidRootPart
+    local nearestEnemy, nearestDistance = nil, math.huge
+
+    for _, enemy in pairs(game.Workspace.Enemies:GetChildren()) do
+        if enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+            local distance = (humanoidRootPart.Position - enemy.HumanoidRootPart.Position).Magnitude
+            if distance < nearestDistance then
+                nearestEnemy = enemy
+                nearestDistance = distance
+            end
+        end
+    end
+
+    return nearestEnemy
+end
+
+function Library.attackEnemy(enemy, combatStyle)
+    local player = game.Players.LocalPlayer
+    local character = player.Character
+    if character and enemy and enemy:FindFirstChild("Humanoid") then
+        local humanoidRootPart = enemy:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            character.HumanoidRootPart.CFrame = humanoidRootPart.CFrame
+            if combatStyle == "Sword" or combatStyle == "Gun" or combatStyle == "Fruit" then
+                local tool = character:FindFirstChildOfClass("Tool")
+                if tool then
+                    tool:Activate()
+                end
+            elseif combatStyle == "Melee" then
+                character.Humanoid:MoveTo(humanoidRootPart.Position)
+                wait(0.1)
+            end
+        end
+    end
+end
+
+-- Function to toggle the quest system
+function Library.toggleQuest(activate)
+    if activate then
+        Library.startDynamicQuest()
+    else
+        print("Quest system deactivated.")
+    end
+end
+
+-- Function to show player stats on the GUI
+function Library.showStats()
+    local stats = Library.getStats()
+    print("Player Level: " .. stats.Level)
+    print("Player Health: " .. stats.Health)
+    print("Player Energy: " .. stats.Energy)
+end
+
+return Library
