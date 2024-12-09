@@ -1,69 +1,83 @@
 -- تحميل مكتبة Orion
 local OrionLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/OrionUI/Orion/main/source"))()
 
--- إنشاء نافذة جديدة باستخدام مكتبة Orion
+-- إنشاء نافذة Orion
 local Window = OrionLib:MakeWindow({
-    Name = "404 NOT FOUND",           -- اسم الواجهة
-    HidePremium = false,              -- عرض حالة بريميوم
-    SaveConfig = true,                -- حفظ الإعدادات
-    ConfigFolder = "404NotFound",     -- المجلد الخاص بحفظ الإعدادات
-    IntroEnabled = true,              -- تفعيل واجهة البداية
-    IntroText = "Welcome to 404 NOT FOUND",  -- نص واجهة البداية
-    Icon = "rbxassetid://6031075938"  -- أيقونة النافذة
+    Name = "404 NOT FOUND",
+    HidePremium = false,
+    SaveConfig = true,
+    ConfigFolder = "404NotFound",
+    IntroEnabled = true,
+    IntroText = "Welcome to 404 NOT FOUND",
+    Icon = "rbxassetid://6031075938"
 })
 
--- متغيرات للقفز العالي
-local jumpHeight = 300
+-- متغيرات القفز العالي
+local jumpPower = 300
 local isHighJumpEnabled = false
 
--- وظيفة لتفعيل أو تعطيل القفز العالي
-local function toggleHighJump(enable)
+-- وظيفة للحصول على الشخصية
+local function getCharacter()
     local player = game:GetService("Players").LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
-    local humanoid = character:WaitForChild("Humanoid")
+    return player.Character or player.CharacterAdded:Wait()
+end
 
-    if enable then
-        humanoid.JumpHeight = jumpHeight
-    else
-        humanoid.JumpHeight = 50  -- القيمة الافتراضية للقفز
+-- وظيفة لتفعيل القفز العالي
+local function toggleHighJump(enable)
+    local character = getCharacter()
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            if enable then
+                humanoid.JumpPower = jumpPower
+            else
+                humanoid.JumpPower = 50 -- القيمة الافتراضية
+            end
+        else
+            OrionLib:MakeNotification({
+                Name = "Error",
+                Content = "Humanoid not found in character.",
+                Image = "rbxassetid://6031075938",
+                Time = 3
+            })
+        end
     end
 end
 
--- إنشاء زر لتفعيل القفز العالي
+-- زر لتفعيل القفز العالي
 Window:MakeTab({
-    Name = "High Jump",       -- اسم التبويب
-    Icon = "rbxassetid://6031075938",  -- أيقونة التبويب
-    PremiumOnly = false       -- مفتوح لجميع المستخدمين
+    Name = "High Jump",
+    Icon = "rbxassetid://6031075938",
+    PremiumOnly = false
 }):AddButton({
     Name = "Toggle High Jump",
     Callback = function()
         isHighJumpEnabled = not isHighJumpEnabled
         toggleHighJump(isHighJumpEnabled)
-
         local status = isHighJumpEnabled and "enabled" or "disabled"
         OrionLib:MakeNotification({
             Name = "High Jump " .. status,
-            Content = "High jump is now " .. status .. " with a height of " .. jumpHeight,
-            Image = "rbxassetid://6031075938",  -- صورة الإشعار
-            Time = 3  -- مدة عرض الإشعار
+            Content = "High jump is now " .. status .. " with power of " .. jumpPower,
+            Image = "rbxassetid://6031075938",
+            Time = 3
         })
     end
 })
 
--- إنشاء شريط تمرير لضبط ارتفاع القفز
+-- شريط تمرير لتغيير قيمة القفز
 Window:MakeTab({
     Name = "Settings",
     Icon = "rbxassetid://6031075938",
     PremiumOnly = false
 }):AddSlider({
-    Name = "Set Jump Height",
+    Name = "Set Jump Power",
     Min = 50,
     Max = 500,
-    Default = jumpHeight,
+    Default = jumpPower,
     Increment = 1,
-    ValueName = "Height",
+    ValueName = "Power",
     Callback = function(value)
-        jumpHeight = value
+        jumpPower = value
         if isHighJumpEnabled then
             toggleHighJump(true)
         end
